@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Electric Player (Ninja) Test Page</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="Ninja-0.1.js"></script>
+    <style>
+        /* Custom font for better aesthetics */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #1a202c; /* Dark background */
+            color: #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden; /* Prevent horizontal scrolling */
+        }
+        .container {
+            display: flex;
+            flex-wrap: wrap; /* Allow wrapping on smaller screens */
+            justify-content: center;
+            gap: 2rem;
+            padding: 2rem;
+            width: 100%;
+            max-width: 1200px;
+        }
+        .electric-section {
+            background-color: #2d3748; /* Slightly lighter dark background */
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            flex: 1 1 calc(50% - 2rem); /* Two columns, responsive */
+            min-width: 300px; /* Minimum width for sections */
+        }
+        canvas {
+            border: 2px solid #4a5568;
+            border-radius: 0.75rem;
+            background-color: #f0f0f0; /* Default canvas background */
+            width: 100%; /* Make canvas responsive within its container */
+            height: 400px; /* Increased height for a more HD feel */
+        }
+        video {
+            border: 2px solid #4a5568;
+            border-radius: 0.75rem;
+            width: 100%;
+            max-width: 400px; /* Max width for video */
+            height: auto;
+        }
+        button {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: bold;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        .btn-primary {
+            background-color: #63b3ed; /* Tailwind blue-400 */
+            color: #1a202c;
+        }
+        .btn-primary:hover {
+            background-color: #4299e1; /* Tailwind blue-500 */
+        }
+        .btn-secondary {
+            background-color: #a0aec0; /* Tailwind gray-400 */
+            color: #1a202c;
+        }
+        .btn-secondary:hover {
+            background-color: #718096; /* Tailwind gray-500 */
+        }
+        h1, h2 {
+            color: #63b3ed; /* Tailwind blue-400 */
+            margin-bottom: 1rem;
+        }
+        p {
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        .footer {
+            margin-top: 2rem;
+            padding-bottom: 2rem;
+            font-size: 0.9rem;
+            color: #a0aec0;
+        }
+    </style>
+</head>
+<body>
+    <h1 class="text-4xl font-bold mt-8 mb-4">Electric.js (Ninja) Test Page</h1>
+    <p class="text-lg text-center max-w-2xl mb-8">
+        This page demonstrates the core capabilities of the Electric.js prototype:
+        vector-like animation, interactivity, and video/image integration, showcasing how it can be
+        embedded "anywhere and everywhere" on a webpage. It also includes a conceptual
+        demonstration of higher compression video formats, now rendered in **high definition** for crisp visuals.
+    </p>
+
+    <div class="container">
+        <div class="electric-section">
+            <h2 class="text-2xl font-semibold">Ninja Game Arena</h2>
+            <p>Control the ninja, throw shurikens, hit the target and energy sprite!</p>
+            <canvas id="electricCanvas"></canvas>
+            <div class="flex flex-wrap justify-center gap-2 mt-4">
+                <button id="playMusicBtn" class="btn-primary">Play Music</button>
+                <button id="pauseMusicBtn" class="btn-secondary">Pause Music</button>
+                <button id="volUpBtn" class="btn-primary">Volume Up</button>
+                <button id="volDownBtn" class="btn-secondary">Volume Down</button>
+                <button id="toggleEnergyBtn" class="btn-primary">Toggle Energy</button>
+            </div>
+        </div>
+
+        <div class="electric-section">
+            <h2 class="text-2xl font-semibold">Animation & Input</h2>
+            <p>A simple animated rectangle, controlled by an external button.</p>
+            <canvas id="electricCanvas1"></canvas>
+            <button id="toggleAnimationBtn" class="btn-primary">Toggle Animation</button>
+            <p id="animationStatus" class="text-sm mt-2">Animation Status: Running</p>
+        </div>
+
+        <div class="electric-section">
+            <h2 class="text-2xl font-semibold">HTML5 Video Integration</h2>
+            <p>Electric.js can interact with and overlay on HTML5 video.</p>
+            <video id="myVideo" controls class="rounded-lg">
+                <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+            <canvas id="electricCanvas2"></canvas> <div class="flex flex-wrap justify-center gap-2 mt-4">
+                <button id="playVideoBtn" class="btn-primary">Play Video</button>
+                <button id="pauseVideoBtn" class="btn-secondary">Pause Video</button>
+            </div>
+            <p class="text-sm mt-2">
+                (Note: Electric.js prototype draws video frames on canvas.
+                Actual video element is shown for controls.)
+            </p>
+        </div>
+
+        <div class="electric-section">
+            <h2 class="text-2xl font-semibold">Image Loading</h2>
+            <p>Electric.js can load and display images on its canvas.</p>
+            <canvas id="electricCanvas3"></canvas>
+            <p class="text-sm mt-2">
+                (A placeholder image is loaded and displayed here.)
+            </p>
+        </div>
+
+        <div class="electric-section">
+            <h2 class="text-2xl font-semibold">Animated Rectangle Demo</h2>
+            <p>A simple animated rectangle demonstrating basic animation.</p>
+            <canvas id="electricCanvas4"></canvas> <p class="text-sm mt-2">
+                (This canvas now shows a basic animated rectangle.)
+            </p>
+        </div>
+
+        <div class="electric-section">
+            <h2 class="text-2xl font-semibold">Anywhere Integration</h2>
+            <p>Another independent Electric.js instance with its own animation.</p>
+            <canvas id="electricCanvas5"></canvas>
+            <button id="changeColorBtn" class="btn-primary">Change Rectangle Color</button>
+        </div>
+
+        <div class="electric-section">
+            <h2 class="text-2xl font-semibold">Simple Static Element</h2>
+            <p>Electric.js can also render static vector elements.</p>
+            <canvas id="electricCanvas6"></canvas>
+            <p class="text-sm mt-2">
+                (This instance shows a static circle, not animated.)
+            </p>
+        </div>
+
+        <div class="electric-section">
+            <h2 class="text-2xl font-semibold">Ninja Running Animation</h2>
+            <p>A dedicated canvas showing a ninja running back and forth.</p>
+            <canvas id="animationCanvas"></canvas>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <p>&copy; 2025 Electric.js (Ninja) Prototype and Vchi Systems. All rights reserved.</p>
+        <p>Built with the vision of a faster, more interactive web.</p>
+    </footer>
+
+    <script src="Ninja-TestFile.ninja.js"></script>
+
+    <script>
+        // Global variables to hold Electric.js app instances for cleanup
+        let electricApp1, electricApp2, electricApp3, electricApp4, electricApp5, electricApp6, audioApp, animationApp;
+
+        // Helper function to draw fallback message on a canvas
+        function drawFallback(canvasId, message) {
+            const canvasElement = document.getElementById(canvasId);
+            if (canvasElement) {
+                const ctx = canvasElement.getContext('2d');
+                const dpr = window.devicePixelRatio || 1;
+                canvasElement.width = canvasElement.clientWidth * dpr;
+                canvasElement.height = canvasElement.clientHeight * dpr;
+                ctx.scale(dpr, dpr);
+                ctx.fillStyle = '#333333'; // Dark background
+                ctx.fillRect(0, 0, canvasElement.width / dpr, canvasElement.height / dpr);
+                ctx.fillStyle = '#e2e8f0'; // Light text
+                ctx.font = '24px Inter';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(message, canvasElement.width / (2 * dpr), canvasElement.height / (2 * dpr));
+                console.error(`Electric.js library not found for ${canvasId}. Displaying fallback: ${message}`);
+            } else {
+                console.error(`Canvas element '${canvasId}' not found for fallback message.`);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- Electric.js Instance 1: Animation & Input ---
+            const electricCanvas1Element = document.getElementById('electricCanvas1');
+            if (typeof Electric === 'undefined' || !electricCanvas1Element) {
+                drawFallback('electricCanvas1', "Electric.js isn't supported or installed.");
+            } else {
+                electricApp1 = new Electric(electricCanvas1Element, { backgroundColor: '#e0e0e0' });
+                const animatedRect1 = electricApp1.createRectangle(50, 50, 80, 80, '#FF5733');
+                electricApp1.startAnimation();
+
+                const toggleAnimationBtn = document.getElementById('toggleAnimationBtn');
+                const animationStatus = document.getElementById('animationStatus');
+                let isAnimationRunning = true;
+
+                if (toggleAnimationBtn) {
+                    toggleAnimationBtn.addEventListener('click', () => {
+                        if (isAnimationRunning) {
+                            electricApp1.stopAnimation();
+                            animationStatus.textContent = 'Animation Status: Stopped';
+                            toggleAnimationBtn.textContent = 'Start Animation';
+                            toggleAnimationBtn.classList.remove('btn-primary');
+                            toggleAnimationBtn.classList.add('btn-secondary');
+                        } else {
+                            electricApp1.startAnimation();
+                            animationStatus.textContent = 'Animation Status: Running';
+                            toggleAnimationBtn.textContent = 'Toggle Animation';
+                            toggleAnimationBtn.classList.remove('btn-secondary');
+                            toggleAnimationBtn.classList.add('btn-primary');
+                        }
+                        isAnimationRunning = !isAnimationRunning;
+                    });
+                }
+            }
+
+
+            // --- Electric.js Instance 2: HTML5 Video Integration ---
+            const electricCanvas2Element = document.getElementById('electricCanvas2');
+            const videoElement = document.getElementById('myVideo');
+            if (typeof Electric === 'undefined' || !electricCanvas2Element || !videoElement) {
+                 drawFallback('electricCanvas2', "Video canvas or Electric.js not available.");
+            } else {
+                electricApp2 = new Electric(electricCanvas2Element, { backgroundColor: '#d0d0d0' });
+                const videoController = electricApp2.integrateVideo(videoElement, {
+                    x: 0, y: 0, // Draw video from top-left of canvas
+                    width: electricApp2.canvas.width / (window.devicePixelRatio || 1),
+                    height: electricApp2.canvas.height / (window.devicePixelRatio || 1)
+                });
+
+                const playVideoBtn = document.getElementById('playVideoBtn');
+                const pauseVideoBtn = document.getElementById('pauseVideoBtn');
+
+                if (videoController) {
+                    playVideoBtn.addEventListener('click', () => {
+                        videoController.play();
+                        console.log('Video playing via Electric.js control.');
+                    });
+                    pauseVideoBtn.addEventListener('click', () => {
+                        videoController.pause();
+                        console.log('Video paused via Electric.js control.');
+                    });
+                } else {
+                    playVideoBtn.disabled = true;
+                    pauseVideoBtn.disabled = true;
+                    console.warn('Video integration failed, buttons disabled.');
+                }
+
+                electricApp2.addObject({
+                    draw: (graphics) => {
+                        graphics.fillStyle = 'rgba(0, 123, 255, 0.2)';
+                        graphics.fillRect(0, 0, graphics.canvas.width / (window.devicePixelRatio || 1), graphics.canvas.height / (window.devicePixelRatio || 1));
+                        graphics.fillStyle = '#ffffff';
+                        graphics.setFont('24px Inter');
+                        graphics.setTextAlign('center');
+                        graphics.fillText('Electric.js Overlay', graphics.canvas.width / (window.devicePixelRatio || 1) / 2, graphics.canvas.height / (window.devicePixelRatio || 1) / 2);
+                    },
+                    update: () => {}
+                });
+                electricApp2.startAnimation(); // Start animation to draw video frames
+            }
+
+
+            // --- Electric.js Instance 3: Image Loading ---
+            const electricCanvas3Element = document.getElementById('electricCanvas3');
+            if (typeof Electric === 'undefined' || !electricCanvas3Element) {
+                drawFallback('electricCanvas3', "Image canvas or Electric.js not available.");
+            } else {
+                electricApp3 = new Electric(electricCanvas3Element, { backgroundColor: '#f5f5f5' });
+                electricApp3.createImage('https://placehold.co/200x150/FFD700/000000?text=Electric.js+Image', { x: 50, y: 50, width: 200, height: 150 });
+                electricApp3.draw();
+            }
+
+
+            // --- Electric.js Instance 4: Animated Rectangle Demo (Replaced Conceptual Video) ---
+            const electricCanvas4Element = document.getElementById('electricCanvas4');
+            if (typeof Electric === 'undefined' || !electricCanvas4Element) {
+                drawFallback('electricCanvas4', "Animation canvas or Electric.js not available.");
+            } else {
+                electricApp4 = new Electric(electricCanvas4Element, { backgroundColor: '#a0a0a0' });
+                const animatedRect4 = electricApp4.createRectangle(20, 20, 60, 60, '#FF33A8'); // Pink rectangle
+                animatedRect4.update = (deltaTime) => { // Custom update for this rectangle
+                    animatedRect4.x += 70 * deltaTime; // Move faster
+                    if (animatedRect4.x > electricApp4.canvas.width / (window.devicePixelRatio || 1)) {
+                        animatedRect4.x = -animatedRect4.width; // Loop from left
+                    }
+                };
+                electricApp4.startAnimation();
+            }
+
+
+            // --- Electric.js Instance 5: Multiple Instances / Anywhere Integration ---
+            const electricCanvas5Element = document.getElementById('electricCanvas5');
+            if (typeof Electric === 'undefined' || !electricCanvas5Element) {
+                drawFallback('electricCanvas5', "Integration canvas or Electric.js not available.");
+            } else {
+                electricApp5 = new Electric(electricCanvas5Element, { backgroundColor: '#c0c0c0' });
+                const animatedRect5 = electricApp5.createRectangle(20, 20, 60, 60, '#33FF57');
+
+                const colors = ['#33FF57', '#5733FF', '#FF33A8', '#FFCC33'];
+                let currentColorIndex = 0;
+                electricApp5.createCanvasButton(
+                    electricApp5.canvas.width / (window.devicePixelRatio || 1) / 2 - 75, electricApp5.canvas.height / (window.devicePixelRatio || 1) - 50, 150, 40,
+                    'Change Color', '#ef4444', '#1a202c',
+                    (() => {
+                        currentColorIndex = (currentColorIndex + 1) % colors.length;
+                        animatedRect5.color = colors[currentColorIndex];
+                        console.log(`Rectangle 5 color changed to: ${animatedRect5.color}`);
+                        electricApp5.draw();
+                    })
+                );
+                electricApp5.startAnimation();
+            }
+
+
+            // --- Electric.js Instance 6: Simple Static Element ---
+            const electricCanvas6Element = document.getElementById('electricCanvas6');
+            if (typeof Electric === 'undefined' || !electricCanvas6Element) {
+                drawFallback('electricCanvas6', "Static element canvas or Electric.js not available.");
+            } else {
+                electricApp6 = new Electric(electricCanvas6Element, { backgroundColor: '#b0b0b0' });
+                electricApp6.addObject({
+                    draw: (graphics) => {
+                        graphics.setFill('#FF8C00');
+                        graphics.beginPath();
+                        graphics.arc(graphics.canvas.width / (window.devicePixelRatio || 1) / 2, graphics.canvas.height / (window.devicePixelRatio || 1) / 2, 50, 0, Math.PI * 2);
+                        graphics.fill();
+                        graphics.closePath();
+                        graphics.setFill('#333333');
+                        graphics.setFont('16px Inter');
+                        graphics.setTextAlign('center');
+                        graphics.fillText('Static Circle', graphics.canvas.width / (window.devicePixelRatio || 1) / 2, graphics.canvas.height / (window.devicePixelRatio || 1) / 2 + 5);
+                    },
+                    update: () => {}
+                });
+                electricApp6.draw();
+            }
+
+
+            // --- Electric.js Instance 7: Audio Integration ---
+            // Adding a new canvas for audio controls
+            const audioCanvas = document.createElement('canvas');
+            audioCanvas.id = 'audioCanvas';
+            audioCanvas.style.width = '100%';
+            audioCanvas.style.height = '150px';
+            audioCanvas.style.border = '2px solid #4a5568';
+            audioCanvas.style.borderRadius = '0.75rem';
+            audioCanvas.style.backgroundColor = '#2d3748';
+            audioCanvas.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
+
+            const audioSection = document.createElement('div');
+            audioSection.className = 'electric-section';
+            audioSection.innerHTML = `
+                <h2 class="text-2xl font-semibold">Audio Integration</h2>
+                <p>Play and control a background audio track. (Buttons on canvas)</p>
+            `;
+            audioSection.appendChild(audioCanvas);
+            document.querySelector('.container').appendChild(audioSection);
+
+            const audioCanvasElement = document.getElementById('audioCanvas');
+            if (typeof Electric === 'undefined' || !audioCanvasElement) {
+                drawFallback('audioCanvas', "Audio canvas or Electric.js not available.");
+            } else {
+                audioApp = new Electric(audioCanvasElement, { backgroundColor: '#2d3748' });
+                const backgroundMusic = audioApp.createAudio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3', { loop: true, volume: 0.5 });
+
+                audioApp.createCanvasButton(
+                    audioApp.canvas.width / (window.devicePixelRatio || 1) / 2 - 150, audioApp.canvas.height / (window.devicePixelRatio || 1) - 50, 80, 40,
+                    'Play', '#ef4444', '#1a202c',
+                    () => backgroundMusic.play()
+                );
+                audioApp.createCanvasButton(
+                    audioApp.canvas.width / (window.devicePixelRatio || 1) / 2 - 60, audioApp.canvas.height / (window.devicePixelRatio || 1) - 50, 80, 40,
+                    'Pause', '#3b82f6', '#1a202c',
+                    () => backgroundMusic.pause()
+                );
+                let currentVolume = 0.5;
+                const volumeUpButton = audioApp.createCanvasButton(
+                    audioApp.canvas.width / (window.devicePixelRatio || 1) / 2 + 30, audioApp.canvas.height / (window.devicePixelRatio || 1) - 50, 80, 40,
+                    'Vol Up', '#3b82f6', '#1a202c',
+                    () => {
+                        currentVolume = Math.min(1, currentVolume + 0.1);
+                        backgroundMusic.setVolume(currentVolume);
+                    }
+                );
+                const volumeDownButton = audioApp.createCanvasButton(
+                    audioApp.canvas.width / (window.devicePixelRatio || 1) / 2 + 120, audioApp.canvas.height / (window.devicePixelRatio || 1) - 50, 80, 40,
+                    'Vol Down', '#3b82f6', '#1a202c',
+                    () => {
+                        currentVolume = Math.max(0, currentVolume - 0.1);
+                        backgroundMusic.setVolume(currentVolume);
+                    }
+                );
+                audioApp.startAnimation();
+            }
+
+            // --- New Electric.js Instance for Ninja Running Animation ---
+            const animationCanvasElement = document.getElementById('animationCanvas');
+            if (typeof Electric === 'undefined' || !animationCanvasElement) {
+                drawFallback('animationCanvas', "Ninja/Electric Player isn't supported or installed.");
+            } else {
+                animationApp = new Electric(animationCanvasElement, { backgroundColor: '#1a1a1a' });
+                const runningNinja = animationApp.createNinjaCharacter(
+                    animationApp.canvas.width / (window.devicePixelRatio || 1) * 0.2,
+                    animationApp.canvas.height / (window.devicePixelRatio || 1) - 100,
+                    1.0, // Scale
+                    '#000000', // Black body
+                    '#00CC00'  // Green accents
+                );
+
+                let runningNinjaDirection = 1;
+                runningNinja.update = (deltaTime) => {
+                    const moveSpeed = 100; // Pixels per second
+                    runningNinja.x += runningNinjaDirection * moveSpeed * deltaTime;
+
+                    // Reverse direction if hitting canvas edges
+                    if (runningNinja.x + runningNinja.scale * 50 > animationApp.canvas.width / (window.devicePixelRatio || 1) || runningNinja.x - runningNinja.scale * 50 < 0) {
+                        runningNinjaDirection *= -1;
+                    }
+                    // Ensure the ninja is always "moving" for animation frames
+                    runningNinja.setMovement(runningNinjaDirection, 0, deltaTime);
+                };
+                animationApp.startAnimation();
+            }
+
+
+            // Cleanup on page unload (important for real applications)
+            window.addEventListener('beforeunload', () => {
+                if (electricApp1 && electricApp1.destroy) electricApp1.destroy();
+                if (electricApp2 && electricApp2.destroy) electricApp2.destroy();
+                if (electricApp3 && electricApp3.destroy) electricApp3.destroy();
+                if (electricApp4 && electricApp4.destroy) electricApp4.destroy();
+                if (electricApp5 && electricApp5.destroy) electricApp5.destroy();
+                if (electricApp6 && electricApp6.destroy) electricApp6.destroy();
+                if (audioApp && audioApp.destroy) audioApp.destroy();
+                if (animationApp && animationApp.destroy) animationApp.destroy();
+                // Note: ultimateApp (from Ninja-TestFile.ninja.js) is destroyed within its own script.
+            });
+        });
+    </script>
+</body>
+</html>
