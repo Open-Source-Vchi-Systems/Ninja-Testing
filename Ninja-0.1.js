@@ -1,14 +1,6 @@
 // This project was helped by Gemini 2.5 Flash!
 // Ninja 0.1/Electric Player 0.1
-console.log("Electric.js (Ninja) script started loading."); // Diagnostic log
-
-// Import JSZip and FileSaver.js libraries
-// JSZip for creating/reading zip files
-// FileSaver.js for saving files on the client-side
-// These are essential for .elecplayer functionality
-document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>');
-document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>');
-
+console.log("Electric.js (Ninja) Multimedia Ready Template script started loading."); // Diagnostic log
 
 try {
     /**
@@ -18,7 +10,7 @@ try {
      */
     class ElectricGraphics {
         /**
-         * @param {CanvasRenderingContext2D} ctx - The 2D rendering context of the canvas.
+         * @param {CanvasRenderingRenderingContext2D} ctx - The 2D rendering context of the canvas.
          */
         constructor(ctx) {
             this.ctx = ctx;
@@ -295,6 +287,14 @@ try {
         }
 
         /**
+         * Sets the global alpha (transparency) value for all subsequent drawing operations.
+         * @param {number} alpha - The alpha value (0.0 for fully transparent, 1.0 for fully opaque).
+         */
+        setGlobalAlpha(alpha) {
+            this.ctx.globalAlpha = Math.max(0, Math.min(1, alpha)); // Clamp between 0 and 1
+        }
+
+        /**
          * Clears a rectangular area of the canvas.
          * @param {number} x - The x-coordinate of the top-left corner.
          * @param {number} y - The y-coordinate of the top-left corner.
@@ -304,6 +304,20 @@ try {
         clearRect(x, y, width, height) {
             this.ctx.clearRect(x, y, width, height);
         }
+    }
+
+    /**
+     * Calculates the SHA-256 hash of a given text.
+     * @param {string} text - The text to hash.
+     * @returns {Promise<string>} A promise that resolves to the SHA-256 hash in hexadecimal.
+     */
+    async function calculateSHA256(text) {
+        const textEncoder = new TextEncoder();
+        const data = textEncoder.encode(text);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        return hashHex;
     }
 
 
@@ -329,14 +343,127 @@ try {
                 ...options
             };
 
+            /** @type {object} */
+            this.physics = {
+                gravity: 1200, // Pixels per second squared
+                damping: 0.9 // For future use with more advanced physics
+            };
+
+            /** @type {object} */
+            this.lighting = {
+                ambient: '#ffffff', // Default ambient light color
+                sources: [], // Array to hold light source objects {x, y, radius, color}
+                /**
+                 * Adds a conceptual light source.
+                 * @param {number} x - X coordinate of the light source.
+                 * @param {number} y - Y coordinate of the light source.
+                 * @param {number} radius - Radius of influence for the light.
+                 * @param {string} color - Color of the light.
+                 */
+                addLightSource: function(x, y, radius, color) {
+                    this.sources.push({ x, y, radius, color });
+                    console.log(`Added light source at (${x}, ${y}) with radius ${radius} and color ${color}`);
+                },
+                /**
+                 * Clears all conceptual light sources.
+                 */
+                clearLightSources: function() {
+                    this.sources = [];
+                    console.log('Cleared all light sources.');
+                }
+            };
+
+            /** @type {object} */
+            this.network = {
+                isConnected: false,
+                serverUrl: null,
+                _ws: null, // Internal WebSocket instance
+                onMessage: null, // Callback for incoming messages
+                onOpen: null,    // Callback for connection opened
+                onClose: null,   // Callback for connection closed
+                onError: null,   // Callback for connection errors
+
+                /**
+                 * Connects to a WebSocket server.
+                 * @param {string} url - The WebSocket server URL.
+                 * @param {function} [onMessageCallback] - Callback function for incoming messages.
+                 * @param {function} [onOpenCallback] - Callback function for connection open.
+                 * @param {function} [onCloseCallback] - Callback function for connection close.
+                 * @param {function} [onErrorCallback] - Callback function for connection error.
+                 */
+                connectToServer: function(url, onMessageCallback, onOpenCallback, onCloseCallback, onErrorCallback) {
+                    if (this._ws && this._ws.readyState === WebSocket.OPEN) {
+                        console.warn('Network: Already connected to a server.');
+                        return;
+                    }
+                    this.serverUrl = url;
+                    this.onMessage = onMessageCallback;
+                    this.onOpen = onOpenCallback;
+                    this.onClose = onCloseCallback;
+                    this.onError = onErrorCallback;
+
+                    this._ws = new WebSocket(url);
+
+                    this._ws.onopen = (event) => {
+                        this.isConnected = true;
+                        console.log('Network: Connected to server:', url);
+                        if (this.onOpen) this.onOpen(event);
+                    };
+
+                    this._ws.onmessage = (event) => {
+                        console.log('Network: Message received:', event.data);
+                        if (this.onMessage) this.onMessage(event.data);
+                    };
+
+                    this._ws.onclose = (event) => {
+                        this.isConnected = false;
+                        console.log('Network: Disconnected from server:', event.code, event.reason);
+                        if (this.onClose) this.onClose(event);
+                    };
+
+                    this._ws.onerror = (event) => {
+                        console.error('Network: WebSocket error:', event);
+                        if (this.onError) this.onError(event);
+                    };
+                },
+
+                /**
+                 * Sends data to the connected WebSocket server.
+                 * @param {string|object} data - The data to send. If an object, it will be stringified.
+                 */
+                sendData: function(data) {
+                    if (this._ws && this._ws.readyState === WebSocket.OPEN) {
+                        const payload = typeof data === 'object' ? JSON.stringify(data) : data;
+                        this._ws.send(payload);
+                        console.log('Network: Data sent:', payload);
+                    } else {
+                        console.warn('Network: Not connected to a server. Data not sent.');
+                    }
+                },
+
+                /**
+                 * Disconnects from the WebSocket server.
+                 */
+                disconnectFromServer: function() {
+                    if (this._ws) {
+                        this._ws.close();
+                        this._ws = null;
+                        this.isConnected = false;
+                        this.serverUrl = null;
+                        console.log('Network: Disconnected from server.');
+                    }
+                }
+            };
+
+
             /** @type {Array<object>} */
             this.animatedObjects = []; // Stores objects with an 'update' method
             /** @type {Array<object>} */
             this.renderableObjects = []; // Stores objects with a 'draw' method, sorted by layer
             /** @type {Array<object>} */
             this.canvasButtons = []; // Stores internal buttons for click detection
-            /** @type {Array<HTMLAudioElement>} */
-            this.audioElements = []; // Stores audio elements for management and cleanup
+            /** @type {Map<string, HTMLAudioElement[]>} */
+            this.audioChannels = new Map(); // Stores audio elements by channel
 
             this.frameId = null; // For requestAnimationFrame
             this.lastTime = 0; // For delta time calculation
@@ -570,6 +697,11 @@ try {
                 obj.update(deltaTime);
             });
 
+            // If a gameLoopHook is defined, call it to run game-specific logic
+            if (typeof this.gameLoopHook === 'function') {
+                this.gameLoopHook(deltaTime, this);
+            }
+
             // Draw all renderable objects in sorted order
             this.renderableObjects.forEach(obj => {
                 this.graphics.save(); // Save graphics state before drawing each object
@@ -637,7 +769,6 @@ try {
                 text: text,
                 buttonColor: buttonColor,
                 textColor: textColor,
-                callback: callback,
                 isHovered: false, // For future hover effects
                 draw: (graphics) => {
                     graphics.save();
@@ -659,7 +790,8 @@ try {
                 containsPoint: (px, py) => {
                     return px >= button.x && px <= button.x + button.width &&
                            py >= button.y && py <= button.y + button.height;
-                }
+                },
+                callback: callback // Store callback directly on the button object
             };
             this.addObject(button, layer); // Add to renderable objects with specified layer
             this.canvasButtons.push(button); // Add to internal button list for click detection
@@ -714,23 +846,23 @@ try {
          * @returns {object} A renderable and animatable Ninja Star object.
          */
         createNinjaStar(x, y, size, color, layer = 1) {
-            let currentX = x;
-            let currentY = y;
-            let rotation = 0;
-            let speedX = 0;
-            let speedY = 0;
-            let rotationSpeed = 0; // degrees per second
+            let angle = 0;
+            let speed = 0;
+            let targetX = x;
+            let targetY = y;
+            let isThrown = false;
+            let isAttached = true; // Starts attached to ninja
 
             const star = {
-                x: currentX,
-                y: currentY,
+                x: x,
+                y: y,
                 size: size,
                 color: color,
-                rotation: rotation, // in radians
-                speedX: speedX, // Added for external control
-                speedY: speedY, // Added for external control
-                rotationSpeed: rotationSpeed, // Added for external control
-                isAttached: true, // New property to track if it's attached to ninja
+                rotation: angle, // in radians
+                speedX: 0, // Added for external control
+                speedY: 0, // Added for external control
+                rotationSpeed: 0, // Added for external control
+                isAttached: isAttached, // New property to track if it's attached to ninja
                 draw: (graphics) => {
                     graphics.save(); // Save the current graphics state
                     graphics.translate(star.x, star.y); // Move origin to star's center
@@ -758,42 +890,39 @@ try {
                     graphics.restore(); // Restore graphics state
                 },
                 update: (deltaTime) => {
-                    if (!star.isAttached) { // Only update if not attached
-                        star.x += star.speedX * deltaTime;
-                        star.y += star.speedY * deltaTime;
-                        star.rotation += (star.rotationSpeed * Math.PI / 180) * deltaTime; // Convert degrees to radians
+                    if (isThrown) {
+                        const dx = targetX - star.x;
+                        const dy = targetY - star.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
 
-                        // Simple boundary check (e.g., star disappears or bounces off screen)
-                        if (star.x < -star.size || star.x > this.canvas.width / (window.devicePixelRatio || 1) + star.size ||
-                            star.y < -star.size || star.y > this.canvas.height / (window.devicePixelRatio || 1) + star.size) {
-                            // For this example, we'll just stop its movement and rotation
-                            star.speedX = 0;
-                            star.speedY = 0;
-                            star.rotationSpeed = 0;
+                        if (distance > 10) { // Move towards target
+                            star.x += (dx / distance) * speed * deltaTime;
+                            star.y += (dy / distance) * speed * deltaTime;
+                            star.rotation += (rotationSpeed * Math.PI / 180) * deltaTime; // Convert degrees to radians
+                        } else { // Reached target, stop moving
+                            isThrown = false;
+                            speed = 0;
+                            rotationSpeed = 0;
+                            // Optionally, make it disappear or attach to target
                         }
                     }
                 },
                 // Method to "throw" the star
-                throw: (targetX, targetY, throwSpeed = 300, spinSpeed = 720) => {
-                    star.isAttached = false; // Detach from ninja
-                    const dx = targetX - star.x;
-                    const dy = targetY - star.y;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
-                    if (distance === 0) return;
-
-                    const duration = distance / throwSpeed; // seconds
-                    star.speedX = dx / duration;
-                    star.speedY = dy / duration;
-                    star.rotationSpeed = spinSpeed; // degrees per second
+                throw: (tx, ty, throwSpeed = 300, spinSpeed = 720) => {
+                    targetX = tx;
+                    targetY = ty;
+                    speed = throwSpeed; // Pixels per second
+                    rotationSpeed = spinSpeed; // degrees per second
+                    isThrown = true;
+                    isAttached = false;
                     console.log(`Ninja star thrown towards (${targetX}, ${targetY})!`);
                 },
                 reset: () => {
-                    // Resetting position will be handled by the update loop when attached
-                    star.rotation = 0;
-                    star.speedX = 0;
-                    star.speedY = 0;
-                    star.rotationSpeed = 0;
-                    star.isAttached = true; // Re-attach to ninja
+                    isThrown = false;
+                    speed = 0;
+                    angle = 0;
+                    rotationSpeed = 0;
+                    isAttached = true; // Re-attach to ninja
                 }
             };
             this.addObject(star, layer);
@@ -1317,7 +1446,7 @@ try {
          * @param {boolean} [options.loop=true] - Whether the animation should loop.
          * @param {number} [options.rotation=0] - Initial rotation in radians.
          * @param {number} [options.scaleX=1] - Horizontal scale.
-         * @param {number} [options.scaleY=1] - Vertical scale.
+         * @param {number} [options.CaleY=1] - Vertical scale.
          * @param {number} [layer=1] - The drawing layer for the sprite.
          * @returns {object} An animatable sprite object.
          */
@@ -1429,7 +1558,7 @@ try {
          * @param {number} [layer=0] - The drawing layer for the video.
          * @returns {object|null} An object with video control methods and effect toggles.
          */
-        integrateVideo(videoTarget, options = {}, layer = 0) {
+        createVideoDisplay(videoTarget, options = {}, layer = 0) {
             const defaults = { x: 0, y: 0, width: null, height: null, grayscale: false, blur: 0 };
             const opts = { ...defaults, ...options };
 
@@ -1448,7 +1577,7 @@ try {
                 grayscale: opts.grayscale,
                 blur: opts.blur,
                 draw: (graphics) => {
-                    if (!video.paused && !video.ended) {
+                    if (video.readyState >= 2) { // Check if video data is ready
                         graphics.save();
                         // Apply filters
                         let filters = [];
@@ -1488,10 +1617,11 @@ try {
          * @param {object} [options={}] - Options for audio playback.
          * @param {boolean} [options.loop=false] - Whether the audio should loop.
          * @param {number} [options.volume=1] - Initial volume (0.0 to 1.0).
+         * @param {string} [options.channel='default'] - The channel name for audio management.
          * @returns {object|null} An object with audio control methods.
          */
         createAudio(audioUrl, options = {}) {
-            const defaults = { loop: false, volume: 1 };
+            const defaults = { loop: false, volume: 1, channel: 'default' };
             const opts = { ...defaults, ...options };
 
             const audio = new Audio();
@@ -1503,8 +1633,12 @@ try {
                 console.error(`Electric.js: Failed to load audio: ${audioUrl}`);
             };
 
-            console.log(`Electric.js creating audio object for: ${audioUrl}`);
-            this.audioElements.push(audio); // Keep track of audio elements for cleanup
+            console.log(`Electric.js creating audio object for: ${audioUrl} on channel: ${opts.channel}`);
+
+            if (!this.audioChannels.has(opts.channel)) {
+                this.audioChannels.set(opts.channel, []);
+            }
+            this.audioChannels.get(opts.channel).push(audio);
 
             const audioController = {
                 audioElement: audio,
@@ -1516,6 +1650,11 @@ try {
                     audio.pause();
                     console.log(`Paused audio: ${audioUrl}`);
                 },
+                stop: () => { // New stop method
+                    audio.pause();
+                    audio.currentTime = 0;
+                    console.log(`Stopped audio: ${audioUrl}`);
+                },
                 setVolume: (vol) => {
                     audio.volume = Math.max(0, Math.min(1, vol)); // Clamp between 0 and 1
                     console.log(`Set volume for ${audioUrl} to ${audio.volume}`);
@@ -1525,10 +1664,194 @@ try {
                     console.log(`Set loop for ${audioUrl} to ${audio.loop}`);
                 },
                 getVolume: () => audio.volume,
-                getLoop: () => audio.loop
+                getLoop: () => audio.loop,
+                getChannel: () => opts.channel // New method to get channel
             };
             return audioController;
         }
+
+        /**
+         * Stops all audio currently managed by Electric.js across all channels.
+         */
+        stopAllAudio() {
+            console.log("Stopping all audio...");
+            this.audioChannels.forEach(channelAudios => {
+                channelAudios.forEach(audio => {
+                    audio.pause();
+                    audio.currentTime = 0;
+                });
+            });
+        }
+
+        /**
+         * Sets the volume for all audio elements within a specific channel.
+         * @param {string} channelName - The name of the audio channel.
+         * @param {number} volume - The target volume (0.0 to 1.0).
+         */
+        setChannelVolume(channelName, volume) {
+            const clampedVolume = Math.max(0, Math.min(1, volume));
+            if (this.audioChannels.has(channelName)) {
+                this.audioChannels.get(channelName).forEach(audio => {
+                    audio.volume = clampedVolume;
+                });
+                console.log(`Set volume for channel '${channelName}' to ${clampedVolume}`);
+            } else {
+                console.warn(`Channel '${channelName}' not found.`);
+            }
+        }
+
+        /**
+         * Fades the volume of a specific audio channel to a target volume over a duration.
+         * @param {string} channelName - The name of the audio channel.
+         * @param {number} targetVolume - The target volume (0.0 to 1.0).
+         * @param {number} duration - The duration of the fade in milliseconds.
+         */
+        fadeChannel(channelName, targetVolume, duration) {
+            const clampedTargetVolume = Math.max(0, Math.min(1, targetVolume));
+            if (!this.audioChannels.has(channelName)) {
+                console.warn(`Channel '${channelName}' not found for fading.`);
+                return;
+            }
+
+            const channelAudios = this.audioChannels.get(channelName);
+            if (channelAudios.length === 0) return;
+
+            const startVolume = channelAudios[0].volume; // Assume all audios in channel have same starting volume
+            const startTime = performance.now();
+
+            const animateFade = (currentTime) => {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const currentVolume = startVolume + (clampedTargetVolume - startVolume) * progress;
+
+                channelAudios.forEach(audio => {
+                    audio.volume = currentVolume;
+                });
+
+                if (progress < 1) {
+                    requestAnimationFrame(animateFade);
+                } else {
+                    console.log(`Channel '${channelName}' fade complete to volume ${clampedTargetVolume}.`);
+                }
+            };
+            requestAnimationFrame(animateFade);
+        }
+
+        /**
+         * Creates a particle emitter.
+         * @param {object} options - Configuration for the particle emitter.
+         * @param {number} options.x - X coordinate of the emitter.
+         * @param {number} options.y - Y coordinate of the emitter.
+         * @param {string} [options.color='#ffffff'] - Base color of particles.
+         * @param {number} [options.count=10] - Number of particles to emit per burst/continuously.
+         * @param {number} [options.speed=100] - Max initial speed of particles.
+         * @param {number} [options.lifetime=1] - Lifetime of each particle in seconds.
+         * @param {number} [options.size=5] - Initial size of particles.
+         * @param {number} [options.spread=Math.PI*2] - Angle spread in radians (e.g., Math.PI for half circle, Math.PI*2 for full circle).
+         * @param {number} [options.emissionRate=0] - Particles per second (0 for burst).
+         * @param {number} [options.duration=0] - Duration of continuous emission in seconds (0 for infinite or burst).
+         * @param {number} [layer=50] - Drawing layer for particles.
+         * @returns {object} The particle emitter object.
+         */
+        createParticleEmitter(options) {
+            const defaults = {
+                x: 0, y: 0, color: '#ffffff', count: 10, speed: 100,
+                lifetime: 1, size: 5, spread: Math.PI * 2, emissionRate: 0, duration: 0, layer: 50
+            };
+            const opts = { ...defaults, ...options };
+
+            const particles = [];
+            let emissionTimer = 0;
+            let activeDuration = 0;
+            let isEmitting = true;
+
+            const emitter = {
+                x: opts.x, y: opts.y,
+                color: opts.color,
+                size: opts.size,
+                emissionRate: opts.emissionRate,
+                duration: opts.duration,
+                isPlaying: true, // Controls if the emitter is active
+                draw: (graphics) => {
+                    graphics.save();
+                    particles.forEach(p => {
+                        const alpha = p.lifetime / p.maxLifetime; // Fade out
+                        graphics.setGlobalAlpha(alpha);
+                        graphics.setFill(p.color);
+                        graphics.beginPath();
+                        graphics.arc(p.x, p.y, p.size * alpha, 0, Math.PI * 2); // Shrink and fade
+                        graphics.fill();
+                    });
+                    graphics.restore();
+                },
+                update: (deltaTime) => {
+                    if (!emitter.isPlaying) return;
+
+                    // Update existing particles
+                    for (let i = particles.length - 1; i >= 0; i--) {
+                        const p = particles[i];
+                        p.x += p.vx * deltaTime;
+                        p.y += p.vy * deltaTime;
+                        p.lifetime -= deltaTime;
+
+                        if (p.lifetime <= 0) {
+                            particles.splice(i, 1); // Remove dead particles
+                        }
+                    }
+
+                    // Emit new particles if continuous or burst
+                    if (opts.emissionRate > 0) { // Continuous emission
+                        if (opts.duration === 0 || activeDuration < opts.duration) {
+                            emissionTimer += deltaTime;
+                            while (emissionTimer >= (1 / opts.emissionRate)) {
+                                emitter._emitParticle();
+                                emissionTimer -= (1 / opts.emissionRate);
+                            }
+                            activeDuration += deltaTime;
+                        } else {
+                            isEmitting = false; // Stop after duration
+                        }
+                    } else if (isEmitting && particles.length === 0) { // Burst emission (only once if not continuous)
+                        for (let i = 0; i < opts.count; i++) {
+                            emitter._emitParticle();
+                        }
+                        isEmitting = false; // Burst only once
+                    }
+                },
+                _emitParticle: () => {
+                    const angle = Math.random() * opts.spread - (opts.spread / 2); // Random angle within spread
+                    const speed = Math.random() * opts.speed;
+                    const vx = speed * Math.cos(angle);
+                    const vy = speed * Math.sin(angle);
+
+                    particles.push({
+                        x: emitter.x,
+                        y: emitter.y,
+                        vx: vx,
+                        vy: vy,
+                        color: emitter.color,
+                        size: emitter.size,
+                        lifetime: opts.lifetime,
+                        maxLifetime: opts.lifetime // Store for alpha calculation
+                    });
+                },
+                play: () => { emitter.isPlaying = true; isEmitting = true; activeDuration = 0; },
+                stop: () => { emitter.isPlaying = false; isEmitting = false; },
+                burst: (count = opts.count) => { // Trigger a manual burst
+                    for (let i = 0; i < count; i++) {
+                        emitter._emitParticle();
+                    }
+                },
+                // Method to clear all particles (useful for resetting)
+                clearParticles: () => {
+                    particles.length = 0;
+                }
+            };
+
+            this.addObject(emitter, opts.layer);
+            return emitter;
+        }
+
 
         /**
          * Checks for Axis-Aligned Bounding Box (AABB) collision between two objects.
@@ -1551,134 +1874,287 @@ try {
         }
 
         /**
-         * Cleans up the Electric.js instance.
+         * Loads an .elecplayer file (ZIP archive containing HTML, JS, CSS) and displays its content.
+         * @param {File} file - The .elecplayer file to load.
+         * @param {string} outputElementId - The ID of the HTML element where the loaded content will be displayed.
          */
-        destroy() {
-            this.stopAnimation();
-            window.removeEventListener('resize', () => this.resizeCanvas());
-            // Remove input event listeners
-            window.removeEventListener('keydown', this._handleKeyDown.bind(this));
-            window.removeEventListener('keyup', this._handleKeyUp.bind(this));
-            this.canvas.removeEventListener('mousedown', this._handleMouseDown.bind(this));
-            this.canvas.removeEventListener('mouseup', this._handleMouseUp.bind(this));
-            this.canvas.removeEventListener('mousemove', this._handleMouseMove.bind(this));
-            this.canvas.removeEventListener('touchstart', this._handleTouchStart.bind(this));
-            this.canvas.removeEventListener('touchend', this._handleTouchEnd.bind(this));
-            this.canvas.removeEventListener('touchmove', this._handleTouchMove.bind(this));
-
-            this.canvas.removeEventListener('click', this._handleCanvasClick); // Remove click listener
-            this.animatedObjects = [];
-            this.renderableObjects = [];
-            this.canvasButtons = []; // Clear internal buttons
-            // Pause and clear all managed audio elements
-            this.audioElements.forEach(audio => {
-                audio.pause();
-                audio.src = ''; // Clear source to release resources
-                audio.load(); // Reload to apply source clear
-            });
-            this.audioElements = [];
-            console.log('Electric.js instance destroyed.');
-        }
-
-        /**
-         * Loads an .elecplayer file (ZIP archive) and runs its contents in an iframe.
-         * @param {File} file - The .elecplayer file (a File object from an input).
-         * @param {string} targetElementId - The ID of the HTML element where the iframe will be inserted.
-         */
-        async loadElecPlayerFile(file, targetElementId) {
-            const targetElement = document.getElementById(targetElementId);
-            if (!targetElement) {
-                console.error(`Target element '${targetElementId}' not found for loading .elecplayer file.`);
+        async loadElecPlayerFile(file, outputElementId) {
+            const outputElement = document.getElementById(outputElementId);
+            if (!outputElement) {
+                console.error(`ElecPlayer: Output element with ID '${outputElementId}' not found.`);
                 return;
             }
 
-            console.log(`Loading .elecplayer file: ${file.name}`);
-            targetElement.innerHTML = '<p>Loading .elecplayer...</p>';
+            outputElement.innerHTML = '<p class="text-center text-gray-400 mt-4">Loading ElecPlayer file...</p>';
 
             try {
+                // Conceptual call to WebAssembly for decoding/parsing
+                await this.decodeWithWASM(file.name, 'ElecPlayer File'); // Await the conceptual WASM decoding
+
                 const zip = new JSZip();
                 const contents = await zip.loadAsync(file);
 
-                const htmlFile = contents.file("index.html");
-                const jsFile = contents.file("script.js");
-                const cssFile = contents.file("style.css");
+                let htmlContent = '';
+                let jsContent = '';
+                let cssContent = '';
 
-                if (!htmlFile || !jsFile || !cssFile) {
-                    throw new Error("Invalid .elecplayer file: Missing index.html, script.js, or style.css");
+                // Read files from the zip
+                for (const filename in contents.files) {
+                    if (filename.endsWith('.html')) {
+                        htmlContent = await contents.files[filename].async('text');
+                    } else if (filename.endsWith('.js') && filename !== 'electric.js' && filename !== 'PowerGame-0.1.js') { // Exclude bundled libraries
+                        jsContent = await contents.files[filename].async('text');
+                    } else if (filename.endsWith('.css')) {
+                        cssContent = await contents.files[filename].async('text');
+                    }
                 }
 
-                const htmlContent = await htmlFile.async("string");
-                const jsContent = await jsFile.async("string");
-                const cssContent = await cssFile.async("string");
+                if (!htmlContent) {
+                    outputElement.innerHTML = '<p class="text-center text-red-400 mt-4">Error: No HTML file found in .elecplayer archive.</p>';
+                    return;
+                }
 
-                // Create a Blob URL for the iframe content
-                const iframeContent = `
-                    <!DOCTYPE html>
-                    <html lang="en">
-                    <head>
-                        <meta charset="UTF-8">
-                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                        <title>ElecPlayer Content</title>
-                        <style>${cssContent}</style>
-                    </head>
-                    <body>
-                        ${htmlContent}
-                        <script>${jsContent}</script>
-                    </body>
-                    </html>
-                `;
-
-                const blob = new Blob([iframeContent], { type: 'text/html' });
-                const blobUrl = URL.createObjectURL(blob);
-
+                // Create an iframe to sandbox the loaded content
                 const iframe = document.createElement('iframe');
                 iframe.style.width = '100%';
                 iframe.style.height = '100%';
                 iframe.style.border = 'none';
-                iframe.src = blobUrl;
+                iframe.sandbox = 'allow-scripts allow-same-origin'; // Restrict iframe capabilities
 
-                // Clear previous content and append iframe
-                targetElement.innerHTML = '';
-                targetElement.appendChild(iframe);
+                outputElement.innerHTML = ''; // Clear loading message
+                outputElement.appendChild(iframe);
 
                 iframe.onload = () => {
-                    console.log(".elecplayer content loaded into iframe.");
-                    URL.revokeObjectURL(blobUrl); // Clean up the Blob URL
+                    const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                    iframeDoc.open();
+                    iframeDoc.write(htmlContent); // Write HTML
+                    iframeDoc.close();
+
+                    // Inject CSS
+                    if (cssContent) {
+                        const style = iframeDoc.createElement('style');
+                        style.textContent = cssContent;
+                        iframeDoc.head.appendChild(style);
+                    }
+
+                    // Inject bundled Electric.js first if it exists
+                    if (contents.files['electric.js']) {
+                        contents.files['electric.js'].async('text').then(electricJsCode => {
+                            const electricScriptInIframe = iframeDoc.createElement('script');
+                            electricScriptInIframe.textContent = electricJsCode;
+                            iframeDoc.head.appendChild(electricScriptInIframe);
+                            console.log("Bundled electric.js injected into iframe.");
+
+                            // After electric.js, check for PowerGame-0.1.js
+                            if (contents.files['PowerGame-0.1.js']) {
+                                contents.files['PowerGame-0.1.js'].async('text').then(powerGameCode => {
+                                    const powerGameScriptInIframe = iframeDoc.createElement('script');
+                                    powerGameScriptInIframe.textContent = powerGameCode;
+                                    iframeDoc.head.appendChild(powerGameScriptInIframe);
+                                    console.log("Bundled PowerGame-0.1.js injected into iframe.");
+
+                                    // Finally, inject custom JS content after all libraries
+                                    if (jsContent) {
+                                        const script = iframeDoc.createElement('script');
+                                        script.textContent = jsContent;
+                                        iframeDoc.body.appendChild(script);
+                                    }
+                                }).catch(e => console.error("Error loading bundled PowerGame-0.1.js:", e));
+                            } else {
+                                console.warn("No bundled PowerGame-0.1.js found in archive. The loaded app might not function correctly.");
+                                // If PowerGame-0.1.js is not bundled, still inject main jsContent
+                                if (jsContent) {
+                                    const script = iframeDoc.createElement('script');
+                                    script.textContent = jsContent;
+                                    iframeDoc.body.appendChild(script);
+                                }
+                            }
+                        }).catch(e => console.error("Error loading bundled electric.js:", e));
+                    } else {
+                        console.warn("No bundled electric.js found in archive. The loaded app might not function correctly.");
+                        // If no electric.js, still inject main jsContent
+                        if (jsContent) {
+                            const script = iframeDoc.createElement('script');
+                            script.textContent = jsContent;
+                            iframeDoc.body.appendChild(script);
+                        }
+                    }
                 };
 
+                console.log("ElecPlayer file content prepared for iframe.");
+
             } catch (error) {
-                console.error("Failed to load .elecplayer file:", error);
-                targetElement.innerHTML = `<p style="color: red;">Error loading .elecplayer: ${error.message}</p>`;
+                console.error("Error loading ElecPlayer file:", error);
+                outputElement.innerHTML = `<p class="text-center text-red-400 mt-4">Error loading ElecPlayer file: ${error.message}</p>`;
             }
         }
 
         /**
          * Creates an .elecplayer file (ZIP archive) from provided HTML, JS, and CSS content.
-         * @param {string} htmlContent - The HTML content for index.html.
-         * @param {string} jsContent - The JavaScript content for script.js.
-         * @param {string} cssContent - The CSS content for style.css.
-         * @param {string} filename - The desired filename for the .elecplayer file (e.g., "myGame.elecplayer").
+         * This method no longer includes PowerGameTest.js specifically.
+         * @param {string} htmlContent - The HTML content for the main file.
+         * @param {string} jsContent - The JavaScript content for the main script.
+         * @param {string} cssContent - The CSS content for styling.
+         * @param {string} filename - The desired filename for the .elecplayer file (e.g., 'myGame.elecplayer').
          */
         async createElecPlayerFile(htmlContent, jsContent, cssContent, filename) {
-            if (typeof JSZip === 'undefined' || typeof saveAs === 'undefined') {
-                console.error("JSZip or FileSaver.js is not loaded. Cannot create .elecplayer file.");
-                return;
-            }
-
+            console.log("Creating ElecPlayer file:", filename);
             const zip = new JSZip();
+
+            // Add core files
             zip.file("index.html", htmlContent);
-            zip.file("script.js", jsContent);
+            zip.file("script.js", jsContent); // This is the user's custom code
             zip.file("style.css", cssContent);
 
-            console.log(`Creating .elecplayer file: ${filename}`);
-
-            try {
-                const blob = await zip.generateAsync({ type: "blob" });
-                saveAs(blob, filename);
-                console.log(".elecplayer file created successfully!");
-            } catch (error) {
-                console.error("Failed to create .elecplayer file:", error);
+            // Fetch the content of the currently loaded Electric.js library itself
+            const currentElectricScript = document.getElementById('electric-js-prototype');
+            if (currentElectricScript && currentElectricScript.src) {
+                try {
+                    const response = await fetch(currentElectricScript.src);
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    const electricJsCode = await response.text();
+                    zip.file("electric.js", electricJsCode); // Bundle Electric.js itself
+                    console.log("Electric.js bundled into .elecplayer file.");
+                } catch (error) {
+                    console.error("Failed to fetch Electric.js for bundling:", error);
+                    // Continue without bundling if fetch fails, but log the error
+                }
+            } else {
+                console.warn("Could not find Electric.js script element with ID 'electric-js-prototype' or its src. It will not be bundled.");
             }
+
+            // --- NEW: Bundle PowerGame-0.1.js ---
+            const powerGameScript = document.querySelector('script[src="PowerGame-0.1.js"]'); // Find by src
+            if (powerGameScript && powerGameScript.src) {
+                try {
+                    const response = await fetch(powerGameScript.src);
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    const powerGameCode = await response.text();
+                    zip.file("PowerGame-0.1.js", powerGameCode); // Bundle PowerGame-0.1.js
+                    console.log("PowerGame-0.1.js bundled into .elecplayer file.");
+                } catch (error) {
+                    console.error("Failed to fetch PowerGame-0.1.js for bundling:", error);
+                }
+            } else {
+                console.warn("Could not find PowerGame-0.1.js script element. It will not be bundled.");
+            }
+            // --- END NEW ---
+
+            // Generate the ZIP file
+            const content = await zip.generateAsync({ type: "blob" });
+
+            // Save the file
+            saveAs(content, filename);
+            console.log(`ElecPlayer file '${filename}' generated and saved.`);
+        }
+
+        /**
+         * Conceptual method to demonstrate WebAssembly decoding.
+         * In a real application, this would involve loading a WASM module
+         * and calling its decoding functions.
+         * @param {string} dataIdentifier - A name or identifier for the data being decoded.
+         * @param {string} dataType - The type of data being decoded (e.g., 'video', 'audio', 'custom format').
+         */
+        async decodeWithWASM(dataIdentifier, dataType) {
+            console.log(`[WASM Conceptual]: Attempting to decode '${dataIdentifier}' (${dataType}) using WebAssembly...`);
+            // In a real scenario, you would:
+            // 1. Fetch and compile your .wasm module:
+            //    const response = await fetch('your_decoder.wasm');
+            //    const bytes = await response.arrayBuffer();
+            //    const { instance } = await WebAssembly.instantiate(bytes, importObject);
+            //
+            // 2. Call a function from the WASM module to decode the data:
+            //    const decodedData = instance.exports.decode(data);
+            //
+            // 3. Handle the decoded output.
+            //
+            // For this demonstration, we just simulate the process.
+            await new Promise(resolve => setTimeout(resolve, 500)); // Simulate decoding time
+            console.log(`[WASM Conceptual]: Successfully simulated WebAssembly decoding for '${dataIdentifier}'.`);
+        }
+
+        /**
+         * Creates a scene based on a simplified configuration object.
+         * This method demonstrates a higher-level API for content creation.
+         * @param {object} sceneConfig - Configuration object for the scene.
+         * @param {string} [sceneConfig.background] - Background color or type (e.g., 'dojo').
+         * @param {Array<object>} [sceneConfig.elements] - Array of element configurations.
+         * @returns {object} An object representing the created scene, containing references to its elements.
+         */
+        createScene(sceneConfig) {
+            console.log("Creating scene with config:", sceneConfig);
+            const sceneElements = {};
+            const canvasWidth = this.canvas.width / (window.devicePixelRatio || 1);
+            const canvasHeight = this.canvas.height / (window.devicePixelRatio || 1);
+
+            if (sceneConfig.background) {
+                if (sceneConfig.background === 'dojo') {
+                    sceneElements.background = this.createDojoBackground(canvasWidth, canvasHeight);
+                } else {
+                    this.options.backgroundColor = sceneConfig.background; // Set background color
+                }
+            }
+
+            if (sceneConfig.elements && Array.isArray(sceneConfig.elements)) {
+                sceneConfig.elements.forEach(elementConfig => {
+                    switch (elementConfig.type) {
+                        case 'rectangle':
+                            sceneElements[elementConfig.id || 'rect'] = this.createRectangle(
+                                elementConfig.x, elementConfig.y, elementConfig.width, elementConfig.height,
+                                elementConfig.color, elementConfig.layer
+                            );
+                            break;
+                        case 'ninjaCharacter':
+                            sceneElements[elementConfig.id || 'ninja'] = this.createNinjaCharacter(
+                                elementConfig.x, elementConfig.y, elementConfig.scale,
+                                elementConfig.bodyColor, elementConfig.accentColor, elementConfig.layer
+                            );
+                            break;
+                        case 'ninjaStar':
+                            sceneElements[elementConfig.id || 'star'] = this.createNinjaStar(
+                                elementConfig.x, elementConfig.y, elementConfig.size,
+                                elementConfig.color, elementConfig.layer
+                            );
+                            break;
+                        case 'particleEmitter':
+                            sceneElements[elementConfig.id || 'emitter'] = this.createParticleEmitter(elementConfig);
+                            break;
+                        // Add more element types as needed
+                        default:
+                            console.warn(`Unknown element type in scene config: ${elementConfig.type}`);
+                    }
+                });
+            }
+
+            console.log("Scene created with elements:", sceneElements);
+            return sceneElements;
+        }
+
+
+        /**
+         * Cleans up the Electric.js instance.
+         */
+        destroy() {
+            this.stopAnimation();
+            window.removeEventListener('resize', () => this.resizeCanvas());
+            this.canvas.removeEventListener('click', this._handleCanvasClick); // Remove click listener
+            this.animatedObjects = [];
+            this.renderableObjects = [];
+            this.canvasButtons = []; // Clear internal buttons
+            // Pause and clear all managed audio elements
+            this.audioChannels.forEach(channelAudios => {
+                channelAudios.forEach(audio => {
+                    audio.pause();
+                    audio.src = ''; // Clear source to release resources
+                    audio.load(); // Reload to apply source clear
+                });
+            });
+            this.audioChannels.clear(); // Clear the map
+            // Disconnect from network if connected
+            if (this.network.isConnected) {
+                this.network.disconnectFromServer();
+            }
+            console.log('Electric.js instance destroyed.');
         }
     }
 

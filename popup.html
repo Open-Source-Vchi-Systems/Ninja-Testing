@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Electric Player Plugin</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        body {
+            width: 300px;
+            padding: 15px;
+            background-color: #1a202c; /* Dark background */
+            color: #e2e8f0; /* Light text */
+            font-family: 'Inter', sans-serif;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            width: 100%;
+        }
+        .file-input-wrapper input[type=file] {
+            font-size: 100px;
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+        .button-primary {
+            background-color: #4299e1; /* Tailwind blue-500 */
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            text-align: center;
+            display: block;
+            width: 100%;
+            transition: background-color 0.2s ease-in-out;
+        }
+        .button-primary:hover {
+            background-color: #2b6cb0; /* Darker blue on hover */
+        }
+        .status-message {
+            text-align: center;
+            font-size: 0.9em;
+            color: #a0aec0; /* Gray text */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-xl font-bold text-center text-blue-300">Electric Player Plugin</h1>
+        <p class="text-sm text-center text-gray-400">
+            Load Electric Player content and programs at lighning-fast speed!
+        </p>
+        
+        <div class="file-input-wrapper">
+            <button class="button-primary" id="selectFileBtn">Load .elecplayer File</button>
+            <input type="file" id="elecPlayerFileInput" accept=".elecplayer" class="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer">
+        </div>
+
+        <p id="statusMessage" class="status-message">Awaiting file selection...</p>
+    </div>
+    <!-- Include JSZip for file extraction -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="popup.js"></script>
+</body>
+</html>

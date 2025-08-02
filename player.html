@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Electric Player File Content Viewer</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden; /* Hide scrollbars */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #1a202c; /* Dark background */
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+        }
+        .player-container {
+            position: relative; /* For absolute positioning of messages */
+            width: 90vw;
+            height: 90vh;
+            max-width: 1280px; /* Max width for large screens */
+            max-height: 720px; /* Max height for large screens (16:9 aspect ratio) */
+            border: 4px solid #4299e1; /* Blue border */
+            border-radius: 12px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            background-color: #000; /* Black background for player */
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            background-color: #0a0a0a; /* Default Electric.js background */
+        }
+        .message-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            font-size: 1.5em;
+            z-index: 10;
+        }
+        .message-overlay button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #4299e1;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+        .message-overlay button:hover {
+            background-color: #2b6cb0;
+        }
+    </style>
+    <!-- Include Electric Player Libraries directly -->
+    <script src="Ninja-0.1.js"></script>
+    <script src="PowerGame-0.1.js"></script>
+</head>
+<body>
+    <div class="player-container">
+        <canvas id="elecPlayerGameCanvas"></canvas>
+        <div id="loadingOverlay" class="message-overlay">
+            <p>Loading Electric Player content...</p>
+        </div>
+        <div id="errorOverlay" class="message-overlay hidden">
+            <p id="errorMessage">Error loading content.</p>
+            <button id="closeErrorBtn">Close</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            const errorOverlay = document.getElementById('errorOverlay');
+            const errorMessage = document.getElementById('errorMessage');
+            const closeErrorBtn = document.getElementById('closeErrorBtn');
+            const playerCanvas = document.getElementById('elecPlayerGameCanvas');
+
+            closeErrorBtn.addEventListener('click', () => {
+                window.close(); // Close the tab on error
+            });
+
+            try {
+                // Parse query parameters to get the storage key
+                const urlParams = new URLSearchParams(window.location.search);
+                const storageKey = urlParams.get('key');
+
+                if (!storageKey) {
+                    throw new Error("No content key found in URL parameters. Cannot load ElecPlayer content.");
+                }
+
+                // Retrieve content from chrome.storage.session
+                const data = await chrome.storage.session.get(storageKey);
+                const elecPlayerContent = data[storageKey];
+
+                if (!elecPlayerContent || !elecPlayerContent.html) {
+                    throw new Error("ElecPlayer content not found in session storage or is incomplete.");
+                }
+
+                const htmlContent = elecPlayerContent.html;
+                const jsContent = elecPlayerContent.js;
+                const cssContent = elecPlayerContent.css;
+
+                // Ensure Electric and PowerGame are loaded
+                if (typeof Electric === 'undefined') {
+                    throw new Error("Electric.js library not loaded. Cannot run content.");
+                }
+                
+                let playerApp;
+                // Check if PowerGame-0.1.js defines PowerGameTest (it does in PowerGameTest.js, but not necessarily in PowerGame-0.1.js)
+                // For a generic player, it's safer to use Electric directly unless the content explicitly needs PowerGameTest.
+                // If PowerGame-0.1.js defines a class that extends Electric (like PowerGameTest does),
+                // then the user's custom code can instantiate it. For now, we'll stick to Electric.
+                // If the user's custom code explicitly uses `new PowerGameTest(...)`, PowerGameTest needs to be globally available.
+                // Assuming PowerGame-0.1.js *does* expose PowerGameTest if it contains similar enhancements.
+                if (typeof PowerGameTest !== 'undefined') { // Check if PowerGameTest is defined by PowerGame-0.1.js
+                    playerApp = new PowerGameTest(playerCanvas, { backgroundColor: '#0a0a0a' });
+                    console.log("Initialized PowerGameTest for .elecplayer content.");
+                } else {
+                    playerApp = new Electric(playerCanvas, { backgroundColor: '#0a0a0a' });
+                    console.log("Initialized Electric for .elecplayer content.");
+                }
+
+                // Inject CSS
+                const style = document.createElement('style');
+                style.textContent = cssContent || ''; // No need to decodeURIComponent as it's from storage
+                document.head.appendChild(style);
+
+                // Create a temporary div to parse the HTML content
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = htmlContent; // No need to decodeURIComponent
+
+                // Append all elements from the parsed HTML to the body
+                while (tempDiv.firstChild) {
+                    document.body.appendChild(tempDiv.firstChild);
+                }
+
+                // Execute the JavaScript content
+                if (jsContent) {
+                    const script = document.createElement('script');
+                    // The custom code expects 'playerApp' to be available.
+                    // We define it in this scope, so it should be accessible.
+                    script.textContent = `
+                        (function() {
+                            const playerApp = window.playerAppInstance; // Reference the app instance
+                            try {
+                                ${jsContent} // No need to decodeURIComponent
+                            } catch (e) {
+                                console.error("Error executing custom JS:", e);
+                                const scriptErrorDiv = document.createElement('div');
+                                scriptErrorDiv.style.cssText = 'position: fixed; bottom: 10px; left: 10px; background: red; color: white; padding: 8px; border-radius: 5px; z-index: 1000;';
+                                scriptErrorDiv.textContent = 'Script Error: ' + e.message;
+                                document.body.appendChild(scriptErrorDiv);
+                            }
+                        })();
+                    `;
+                    document.body.appendChild(script);
+                }
+
+                // Expose playerApp globally for the injected script to use
+                window.playerAppInstance = playerApp;
+
+                // Start animation if the loaded content requires it
+                // (The content's JS should ideally call playerApp.startAnimation() itself)
+                // For a simple test, we can start it here.
+                playerApp.startAnimation();
+
+                loadingOverlay.classList.add('hidden'); // Hide loading message
+
+            } catch (error) {
+                console.error("Failed to load ElecPlayer content:", error);
+                loadingOverlay.classList.add('hidden');
+                errorMessage.textContent = `Error: ${error.message}`;
+                errorOverlay.classList.remove('hidden');
+            } finally {
+                // Clean up the stored item from session storage after use
+                if (storageKey) {
+                    await chrome.storage.session.remove(storageKey);
+                    console.log(`Cleaned up session storage key: ${storageKey}`);
+                }
+            }
+        });
+    </script>
+</body>
+</html>
